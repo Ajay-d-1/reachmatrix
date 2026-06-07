@@ -96,8 +96,8 @@ def _search_persons(domain):
                                  headers=headers, timeout=15)
 
         if response.status_code == 429:
-            logger.warning("Stage 2: Rate limited. Waiting 30s...")
-            time.sleep(30)
+            logger.warning("Stage 2: Rate limited. Waiting 5s...")
+            time.sleep(5)
             response = requests.post(url, json=payload,
                                      headers=headers, timeout=15)
 

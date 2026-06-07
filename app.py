@@ -61,8 +61,13 @@ def run_pipeline():
             }
         })
     except Exception as e:
+        import traceback
         logger.error(f"Pipeline error: {e}")
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "error": True,
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }), 500
 
 @app.route("/api/send-emails", methods=["POST"])
 def send_emails():

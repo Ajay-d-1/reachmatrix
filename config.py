@@ -14,8 +14,8 @@ SENDER_EMAIL = os.getenv("SENDER_EMAIL")
 SENDER_NAME = os.getenv("SENDER_NAME")
 
 # Pipeline limits — tuned for free tier constraints
-OCEAN_MAX_RESULTS = 10       # protect trial credits
-PROSPEO_MAX_PER_DOMAIN = 2   # 10 companies x 2 = 20, well under 75 limit
+OCEAN_MAX_RESULTS = 5        # protect trial credits and speed up
+PROSPEO_MAX_PER_DOMAIN = 1   # speed up the pipeline
 PROSPEO_CREDIT_WARNING = 30  # warn if credits drop below this
 BREVO_DAILY_LIMIT = 300      # free tier hard cap
 
