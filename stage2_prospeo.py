@@ -96,10 +96,8 @@ def _search_persons(domain):
                                  headers=headers, timeout=15)
 
         if response.status_code == 429:
-            logger.warning("Stage 2: Rate limited. Waiting 5s...")
-            time.sleep(5)
-            response = requests.post(url, json=payload,
-                                     headers=headers, timeout=15)
+            logger.warning(f"Stage 2: Rate limited on {domain} — skipping")
+            return []
 
         if response.status_code != 200:
             logger.error(f"Stage 2: Search error {response.status_code} "
@@ -148,6 +146,10 @@ def _enrich_person(person_id):
     try:
         response = requests.post(url, json=payload,
                                  headers=headers, timeout=15)
+
+        if response.status_code == 429:
+            logger.warning(f"Stage 2: Rate limited on enrich — skipping")
+            return None
 
         if response.status_code != 200:
             logger.error(f"Stage 2: Enrich error {response.status_code} "
