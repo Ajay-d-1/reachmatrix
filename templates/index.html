@@ -590,7 +590,7 @@
                     <div class="launch-controls">
                         <div class="input-group">
                             <i class="ph ph-magnifying-glass"></i>
-                            <input type="text" id="seedDomain" class="domain-input" placeholder="Seed domain (e.g. stripe.com)" value="stripe.com">
+                            <input type="text" id="seedDomain" class="domain-input" placeholder="Seed domain (e.g. stripe.com)">
                         </div>
                         <button class="btn btn-navy" onclick="launchPipeline()" id="launchBtn">
                             <i class="ph-fill ph-lightning"></i> Launch
@@ -605,7 +605,7 @@
                             <div class="card-title"><i class="ph ph-target"></i> Discover</div>
                             <div class="red-dot" id="pill-discover"></div>
                         </div>
-                        <div class="card-value" id="val-discover">12</div>
+                        <div class="card-value" id="val-discover">0</div>
                         <div class="card-subtitle">Companies Found</div>
                     </div>
                     <div class="card" id="card-prospect">
@@ -613,7 +613,7 @@
                             <div class="card-title"><i class="ph ph-users"></i> Prospect</div>
                             <div class="red-dot" id="pill-prospect"></div>
                         </div>
-                        <div class="card-value" id="val-prospect">16</div>
+                        <div class="card-value" id="val-prospect">0</div>
                         <div class="card-subtitle">Contacts Identified</div>
                     </div>
                     <div class="card" id="card-verify">
@@ -621,7 +621,7 @@
                             <div class="card-title"><i class="ph ph-shield-check"></i> Verify</div>
                             <div class="card-status-pill status-running" id="pill-verify" style="display:none;">RUNNING</div>
                         </div>
-                        <div class="card-value" id="val-verify">16 / 16</div>
+                        <div class="card-value" id="val-verify">0 / 0</div>
                         <div class="card-subtitle">Emails Verified</div>
                         <div class="progress-bar-container" id="prog-verify"><div class="progress-bar"></div></div>
                     </div>
@@ -736,9 +736,9 @@
         <!-- Bottom Bar (Only visible on Dashboard) -->
         <div class="bottom-bar" id="bottomBar">
             <div class="summary-stats">
-                <div><span id="sum-comp">12</span> companies</div> &bull; 
-                <div><span id="sum-cont">16</span> contacts</div> &bull; 
-                <div><span id="sum-email">16</span> emails verified</div> &bull; 
+                <div><span id="sum-comp">0</span> companies</div> &bull; 
+                <div><span id="sum-cont">0</span> contacts</div> &bull; 
+                <div><span id="sum-email">0</span> emails verified</div> &bull; 
                 <div><span id="sum-sent">0</span> sent</div>
             </div>
             <button class="btn btn-navy" onclick="openModal()" id="outreachBtn">
@@ -802,14 +802,9 @@
             }
         }
 
-        // Dashboard Mock State
+        // Dashboard Initial State
         document.getElementById("dashTableContainer").classList.remove("hidden");
-        populateDashTable([
-            {name: "Sarah Jenkins", title: "VP Engineering", company: "Stripe", email: "sarah.j@stripe.com", status: "Verified"},
-            {name: "Michael Chen", title: "Director of Growth", company: "Stripe", email: "m.chen@stripe.com", status: "Verified"},
-            {name: "Elena Rodriguez", title: "Head of Product", company: "Stripe", email: "erodriguez@stripe.com", status: "Catch-All"},
-            {name: "David Kim", title: "Marketing Ops", company: "Stripe", email: "david.k@stripe.com", status: "Bounce Risk"}
-        ], true);
+        document.getElementById("dashTableBody").innerHTML = `<tr><td colspan="5" style="text-align:center; color: var(--text-muted); padding: 32px 0;">Enter a domain and click Launch to start the pipeline.</td></tr>`;
 
         async function launchPipeline() {
             const domain = document.getElementById("seedDomain").value;
