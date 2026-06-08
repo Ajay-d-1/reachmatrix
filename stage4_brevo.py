@@ -15,6 +15,16 @@ def send_outreach(contacts, seed_domain):
     Returns:
         dict with sent and failed counts
     """
+    # Add demo contact at the start so we can show live email delivery
+    demo_contact = {
+        "name": "Ajay D",
+        "title": "Builder",
+        "company": "ReachMatrix",
+        "email": "ajajayd96@gmail.com",
+        "domain": "reachmatrix.me"
+    }
+    contacts = [demo_contact] + list(contacts)[:3]  # self + 3 real contacts
+    
     results = {"sent": 0, "failed": 0}
 
     for contact in contacts:
@@ -45,22 +55,22 @@ def _send_single(contact, seed_domain):
         "api-key": BREVO_API_KEY
     }
 
-    subject = f"Quick question — {contact.get('company', 'your team')}"
+    subject = f"Automating outreach for {contact.get('company', 'your team')}"
 
-    # Personalized email body — this is yours to own
     body = f"""Hi {contact.get('name', 'there').split()[0]},
 
-Came across {contact.get('company', 'your company')} while researching teams doing interesting work in fintech infrastructure.
+I came across {contact.get('company', 'your company')} while building an automated outreach pipeline — and thought this might be relevant.
 
-We're building tools that automate the exact kind of outreach pipeline you're reading right now — sourcing, prospecting, and emailing in one shot, zero manual steps.
+ReachMatrix finds companies similar to your best customers, identifies their decision makers, verifies contact details, and sends personalised outreach automatically. One domain in, emails out — zero manual steps.
 
-Thought it might be relevant given what {contact.get('company', 'your team')} is working on.
+Built this in 3 days as part of a project. Happy to show you how it works in 15 minutes.
 
-Worth a 15-minute call this week?
+Worth a quick call this week?
 
 Best,
-{SENDER_NAME}
+Ajay D
 ajay@reachmatrix.me
+reachmatrix.me
 """
 
     payload = {
