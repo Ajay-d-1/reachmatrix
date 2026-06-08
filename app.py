@@ -5,7 +5,7 @@ import os
 
 from stage1_discover import find_lookalikes
 from stage2_prospeo import find_decision_makers
-from stage3_eazyreach import resolve_emails
+from stage3_Verify import resolve_emails
 from stage4_brevo import send_outreach
 from utils import deduplicate_contacts, filter_cxo
 
