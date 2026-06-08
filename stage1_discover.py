@@ -29,17 +29,22 @@ def find_lookalikes(seed_domain):
 
 def _get_company_industry(domain):
     """
-    Gets industry of seed company via Apollo enrichment.
-    Correct endpoint: /api/v1/organizations/enrich
-    Auth: api_key in request body, not header
+    Auth: X-Api-Key in header (not request body)
+    Method: GET with domain as query param
     """
     url = "https://api.apollo.io/api/v1/organizations/enrich"
 
+    headers = {
+        "X-Api-Key": APOLLO_API_KEY,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache"
+    }
+
     try:
-        response = requests.post(
+        response = requests.get(
             url,
-            json={"api_key": APOLLO_API_KEY, "domain": domain},
-            headers={"Content-Type": "application/json"},
+            params={"domain": domain},
+            headers=headers,
             timeout=10
         )
 
@@ -50,48 +55,50 @@ def _get_company_industry(domain):
             logger.info(f"Stage 1: Seed industry — {industry}")
             return industry
         else:
-            logger.warning(f"Stage 1: Apollo enrich returned {response.status_code} — {response.text[:100]}")
+            logger.warning(f"Stage 1: Apollo enrich {response.status_code}")
 
     except Exception as e:
-        logger.warning(f"Stage 1: Could not get industry — {e}")
+        logger.warning(f"Stage 1: Industry lookup failed — {e}")
 
     return ""
 
 
 def _search_similar_companies(seed_domain, industry):
     """
-    Searches Apollo for companies in same industry.
-    Correct endpoint: /api/v1/mixed_companies/search
-    Auth: api_key in request body
-    Uses q_organization_keyword_tags for industry matching.
+    Auth: X-Api-Key in header
+    Method: POST with filters in body
     """
     url = "https://api.apollo.io/api/v1/mixed_companies/search"
 
+    headers = {
+        "X-Api-Key": APOLLO_API_KEY,
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache"
+    }
+
     payload = {
-        "api_key": APOLLO_API_KEY,
         "page": 1,
         "per_page": 15,
         "organization_num_employees_ranges": ["11,1000"],
     }
 
-    # Add industry filter if we got one
     if industry:
-        payload["q_organization_keyword_tags[]"] = [industry]
+        payload["organization_industries"] = [industry]
 
     try:
         response = requests.post(
             url,
             json=payload,
-            headers={"Content-Type": "application/json"},
+            headers=headers,
             timeout=15
         )
 
         if response.status_code == 403:
-            logger.warning("Stage 1: Apollo free plan doesn't support this endpoint")
+            logger.warning("Stage 1: Apollo plan doesn't support search")
             return []
 
         if response.status_code != 200:
-            logger.warning(f"Stage 1: Apollo returned {response.status_code} — {response.text[:150]}")
+            logger.warning(f"Stage 1: Apollo search {response.status_code} — {response.text[:100]}")
             return []
 
         data = response.json()
