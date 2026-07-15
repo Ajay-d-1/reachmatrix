@@ -1,6 +1,6 @@
 import requests
 import logging
-from config import BREVO_API_KEY, SENDER_EMAIL, SENDER_NAME
+from config import BREVO_API_KEY, SENDER_EMAIL, SENDER_NAME, DEMO_MODE
 
 logger = logging.getLogger(__name__)
 
@@ -10,20 +10,23 @@ def send_outreach(contacts, seed_domain):
     Stage 4: Sends personalized outreach email to each contact.
 
     Args:
-        contacts: verified contact list from Stage 3
+        contacts: verified contact list from Stage 3/pipeline
         seed_domain: original seed (used to personalize copy)
     Returns:
         dict with sent and failed counts
     """
-    # Add demo contact at the start so we can show live email delivery
-    demo_contact = {
-        "name": "Ajay D",
-        "title": "Builder",
-        "company": "ReachMatrix",
-        "email": "ajajayd96@gmail.com",
-        "domain": "reachmatrix.me"
-    }
-    contacts = [demo_contact] + list(contacts)[:3]  # self + 3 real contacts
+    if DEMO_MODE:
+        logger.info("Stage 4: DEMO_MODE=True — prepending demo contact for live email delivery check.")
+        demo_contact = {
+            "name": "Ajay D",
+            "title": "Builder",
+            "company": "ReachMatrix",
+            "email": "ajajayd96@gmail.com",
+            "domain": "reachmatrix.me"
+        }
+        contacts = [demo_contact] + list(contacts)[:3]
+    else:
+        contacts = list(contacts)[:4]  # limit batch size per run
     
     results = {"sent": 0, "failed": 0}
 
@@ -31,14 +34,12 @@ def send_outreach(contacts, seed_domain):
         success = _send_single(contact, seed_domain)
         if success:
             results["sent"] += 1
-            logger.info(f"Stage 4: Sent to {contact['name']} "
-                        f"at {contact['email']}")
+            logger.info(f"Stage 4: Sent to {contact['name']} at {contact['email']}")
         else:
             results["failed"] += 1
-            logger.warning(f"Stage 4: Failed for {contact['name']}")
+            logger.warning(f"Stage 4: Failed for {contact['name']} at {contact.get('email')}")
 
-    logger.info(f"Stage 4: Done. {results['sent']} sent, "
-                f"{results['failed']} failed")
+    logger.info(f"Stage 4: Done. {results['sent']} sent, {results['failed']} failed")
     return results
 
 
@@ -89,17 +90,14 @@ reachmatrix.me
     }
 
     try:
-        response = requests.post(url, json=payload,
-                                 headers=headers, timeout=10)
+        response = requests.post(url, json=payload, headers=headers, timeout=10)
 
         if response.status_code in [200, 201]:
             return True
         else:
-            logger.error(f"Stage 4: Brevo error {response.status_code} "
-                         f"— {response.text}")
+            logger.error(f"Stage 4: Brevo error {response.status_code} — {response.text}")
             return False
 
     except Exception as e:
-        logger.error(f"Stage 4: Exception sending to "
-                     f"{contact.get('email')} — {e}")
+        logger.error(f"Stage 4: Exception sending to {contact.get('email')} — {e}")
         return False

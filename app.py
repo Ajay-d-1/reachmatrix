@@ -2,83 +2,129 @@ from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import logging
 import os
+import traceback
 
-from stage1_discover import find_lookalikes
-from stage2_prospeo import find_decision_makers
+from providers import (
+    MistralDiscoveryProvider,
+    ProspeoPeopleSearchProvider,
+    HunterPeopleSearchProvider,
+    CompetitorResult,
+    PersonResult,
+)
 from stage3_Verify import resolve_emails
 from stage4_brevo import send_outreach
 from utils import deduplicate_contacts, filter_cxo
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
+# Initialize modular providers
+discovery_provider = MistralDiscoveryProvider()
+prospeo_provider = ProspeoPeopleSearchProvider()
+hunter_provider = HunterPeopleSearchProvider()
+
+
 @app.route("/")
 def index():
     return render_template("index.html")
+
 
 @app.route("/api/health", methods=["GET"])
 def health():
     return jsonify({"status": "ok"})
 
+
 @app.route("/api/run-pipeline", methods=["POST"])
 def run_pipeline():
-    data = request.json
-    seed_domain = data.get("domain")
+    data = request.json or {}
+    seed_domain = data.get("domain", "").strip()
     
     if not seed_domain:
         return jsonify({"error": "domain is required"}), 400
 
-    logger.info(f"Starting pipeline for {seed_domain}")
+    logger.info(f"Starting v2 pipeline for seed domain: {seed_domain}")
     
     try:
-        # Stage 1: Discover Lookalikes
-        domains = find_lookalikes(seed_domain)
-        if not domains:
-            return jsonify({"error": "Stage 1 failed: No lookalike companies found"}), 500
+        # Stage 1: Competitor Discovery (Mistral + Verification)
+        companies: list[CompetitorResult] = discovery_provider.find_competitors(seed_domain)
+        if not companies:
+            logger.warning(f"No competitors discovered or verified for {seed_domain}. Returning explicit status without static fallback.")
+            return jsonify({
+                "status": "error",
+                "error": "Competitor discovery returned no results or low confidence for this domain. No static fallback applied.",
+                "companies": [],
+                "contacts": [],
+                "metrics": {"companies": 0, "prospects": 0, "verified": 0}
+            }), 404
+
+        # Check confidence overall for warning / partial status
+        low_confidence_count = sum(1 for c in companies if c["confidence"] == "low" or c["source"] == "llm_unverified")
+        status = "partial" if low_confidence_count > 0 or len(companies) < 2 else "success"
+
+        # Stage 2: People Search across competitor domains (Prospeo -> Hunter fallback)
+        all_contacts: list[PersonResult] = []
+        raw_prospects_count = 0
+
+        for comp in companies:
+            comp_domain = comp["domain"]
+            logger.info(f"Stage 2: Prospecting decision makers at {comp['name']} ({comp_domain})")
             
-        # Stage 2: Prospect Decision Makers
-        contacts = find_decision_makers(domains)
-        if not contacts:
-            return jsonify({"error": "Stage 2 failed: No contacts found"}), 500
+            # Primary provider (Prospeo)
+            domain_contacts = prospeo_provider.search_people(comp_domain)
             
-        contacts = filter_cxo(contacts)
-        contacts = deduplicate_contacts(contacts)
-        
-        # Stage 3: Verify Emails
-        verified = resolve_emails(contacts)
-        
-        return jsonify({
-            "status": "success",
-            "contacts": verified,
+            # Fallback provider (Hunter) if primary returned nothing
+            if not domain_contacts:
+                logger.info(f"Stage 2: Primary provider returned 0 for {comp_domain}. Failing over to Hunter.io...")
+                domain_contacts = hunter_provider.search_people(comp_domain)
+
+            raw_prospects_count += len(domain_contacts)
+            all_contacts.extend(domain_contacts)
+
+        # Stage 3: Verification & Filtering
+        filtered_contacts = filter_cxo(all_contacts)
+        unique_contacts = deduplicate_contacts(filtered_contacts)
+        verified_contacts = resolve_emails(unique_contacts)
+
+        response_payload = {
+            "status": status,
+            "companies": companies,
+            "contacts": verified_contacts,
             "metrics": {
-                "companies": len(domains),
-                "prospects": len(contacts),
-                "verified": len(verified)
+                "companies": len(companies),
+                "prospects": raw_prospects_count,
+                "verified": len(verified_contacts)
             }
-        })
+        }
+
+        if status == "partial":
+            response_payload["warning"] = "Competitor discovery had low confidence for this domain"
+
+        logger.info(f"Pipeline completed: status={status}, companies={len(companies)}, verified_contacts={len(verified_contacts)}")
+        return jsonify(response_payload)
+
     except Exception as e:
-        import traceback
-        logger.error(f"Pipeline error: {e}")
+        logger.error(f"Pipeline exception: {e}")
         return jsonify({
-            "error": True,
-            "message": str(e),
+            "status": "error",
+            "error": str(e),
             "traceback": traceback.format_exc()
         }), 500
 
+
 @app.route("/api/send-emails", methods=["POST"])
 def send_emails():
-    data = request.json
+    data = request.json or {}
     contacts = data.get("contacts", [])
     seed_domain = data.get("seed_domain", "")
     
     if not contacts or not seed_domain:
         return jsonify({"error": "contacts and seed_domain are required"}), 400
 
-    logger.info(f"Starting outreach to {len(contacts)} contacts")
+    logger.info(f"Starting outreach dispatch for {len(contacts)} contacts (seed={seed_domain})")
     try:
         results = send_outreach(contacts, seed_domain)
         return jsonify({
@@ -87,8 +133,9 @@ def send_emails():
             "failed": results["failed"]
         })
     except Exception as e:
-        logger.error(f"Outreach error: {e}")
+        logger.error(f"Outreach exception: {e}")
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

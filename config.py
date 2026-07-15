@@ -10,6 +10,8 @@ EAZYREACH_API_KEY = os.getenv("EAZYREACH_API_KEY")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 APOLLO_API_KEY = os.getenv("APOLLO_API_KEY")
 SERPAPI_KEY = os.getenv("SERPAPI_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+HUNTER_API_KEY = os.getenv("HUNTER_API_KEY")
 
 # Sender identity for Brevo
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
@@ -23,3 +25,5 @@ BREVO_DAILY_LIMIT = 300      # free tier hard cap
 
 # Set True during testing, False for live demo
 MOCK_MODE = False
+DEMO_MODE = os.getenv("DEMO_MODE", "false").lower() == "true"
+
