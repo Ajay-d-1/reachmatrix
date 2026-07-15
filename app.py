@@ -65,20 +65,42 @@ def run_pipeline():
         low_confidence_count = sum(1 for c in companies if c["confidence"] == "low" or c["source"] == "llm_unverified")
         status = "partial" if low_confidence_count > 0 or len(companies) < 2 else "success"
 
-        # Stage 2: People Search across competitor domains (Prospeo -> Hunter fallback)
+        # Stage 2a: People Search on SEED domain (separate dataset)
+        seed_contacts_verified: list[PersonResult] = []
+        try:
+            logger.info(f"Stage 2a: Prospecting decision makers at SEED domain ({seed_domain})")
+            seed_people = prospeo_provider.search_people(seed_domain)
+            if not seed_people:
+                logger.info(f"Stage 2a: Primary provider returned 0 for seed {seed_domain}. Failing over to Hunter.io...")
+                seed_people = hunter_provider.search_people(seed_domain)
+            if seed_people:
+                seed_filtered = filter_cxo(seed_people)
+                seed_unique = deduplicate_contacts(seed_filtered)
+                seed_contacts_verified = resolve_emails(seed_unique)
+                # Tag each seed contact
+                for sc in seed_contacts_verified:
+                    sc["is_seed"] = True
+                logger.info(f"Stage 2a: Found {len(seed_contacts_verified)} verified seed contacts at {seed_domain}")
+            else:
+                logger.info(f"Stage 2a: No decision makers found for seed domain {seed_domain}. Continuing.")
+        except Exception as seed_err:
+            logger.warning(f"Stage 2a: Seed domain people search failed — {seed_err}. Degrading gracefully.")
+            seed_contacts_verified = []
+
+        # Stage 2b: People Search across competitor domains (Prospeo -> Hunter fallback)
         all_contacts: list[PersonResult] = []
         raw_prospects_count = 0
 
         for comp in companies:
             comp_domain = comp["domain"]
-            logger.info(f"Stage 2: Prospecting decision makers at {comp['name']} ({comp_domain})")
+            logger.info(f"Stage 2b: Prospecting decision makers at {comp['name']} ({comp_domain})")
             
             # Primary provider (Prospeo)
             domain_contacts = prospeo_provider.search_people(comp_domain)
             
             # Fallback provider (Hunter) if primary returned nothing
             if not domain_contacts:
-                logger.info(f"Stage 2: Primary provider returned 0 for {comp_domain}. Failing over to Hunter.io...")
+                logger.info(f"Stage 2b: Primary provider returned 0 for {comp_domain}. Failing over to Hunter.io...")
                 domain_contacts = hunter_provider.search_people(comp_domain)
 
             raw_prospects_count += len(domain_contacts)
@@ -93,10 +115,12 @@ def run_pipeline():
             "status": status,
             "companies": companies,
             "contacts": verified_contacts,
+            "seed_contacts": seed_contacts_verified,
             "metrics": {
                 "companies": len(companies),
                 "prospects": raw_prospects_count,
-                "verified": len(verified_contacts)
+                "verified": len(verified_contacts),
+                "seed_verified": len(seed_contacts_verified)
             }
         }
 

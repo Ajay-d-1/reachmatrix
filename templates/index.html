@@ -6,32 +6,33 @@
     <title>ReachMatrix — AI-Powered B2B Outreach Pipeline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Libre+Franklin:wght@500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
         :root {
-            --bg-main: #0B0F19;
-            --bg-card: #131A2A;
-            --bg-sidebar: #0E1320;
-            --bg-card-hover: #182236;
-            --text-main: #F8FAFC;
-            --text-muted: #94A3B8;
-            --border: rgba(255, 255, 255, 0.08);
-            --border-highlight: rgba(99, 102, 241, 0.4);
-            --accent-primary: #6366F1;
-            --accent-primary-hover: #4F46E5;
-            --accent-glow: rgba(99, 102, 241, 0.25);
-            --status-high-bg: rgba(16, 185, 129, 0.15);
-            --status-high-text: #34D399;
-            --status-high-border: rgba(16, 185, 129, 0.3);
-            --status-med-bg: rgba(245, 158, 11, 0.15);
-            --status-med-text: #FBBF24;
-            --status-med-border: rgba(245, 158, 11, 0.3);
-            --status-low-bg: rgba(239, 68, 68, 0.15);
-            --status-low-text: #F87171;
-            --status-low-border: rgba(239, 68, 68, 0.3);
-            --pill-running-bg: rgba(59, 130, 246, 0.15);
-            --pill-running-text: #60A5FA;
+            --bg-main: #F7F5EF;
+            --bg-card: #FFFFFF;
+            --bg-sidebar: #FFFFFF;
+            --bg-card-hover: #F1EFE7;
+            --text-main: #17160F;
+            --text-muted: #6B6858;
+            --border: #E4E0D3;
+            --border-highlight: rgba(30, 70, 56, 0.35);
+            --accent-primary: #1E4638;
+            --accent-primary-hover: #163329;
+            --accent-glow: rgba(30, 70, 56, 0.15);
+            --status-high-bg: rgba(30, 70, 56, 0.10);
+            --status-high-text: #1E4638;
+            --status-high-border: rgba(30, 70, 56, 0.25);
+            --status-med-bg: rgba(166, 102, 28, 0.12);
+            --status-med-text: #A6661C;
+            --status-med-border: rgba(166, 102, 28, 0.25);
+            --status-low-bg: rgba(155, 59, 43, 0.12);
+            --status-low-text: #9B3B2B;
+            --status-low-border: rgba(155, 59, 43, 0.25);
+            --pill-running-bg: rgba(30, 70, 56, 0.10);
+            --pill-running-text: #1E4638;
+            --brass: #96732B;
         }
 
         * {
@@ -71,36 +72,34 @@
         .logo-icon {
             width: 36px;
             height: 36px;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #6366F1, #8B5CF6);
+            border-radius: 50%;
+            background: transparent;
+            border: 2px solid var(--accent-primary);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 20px;
-            box-shadow: 0 0 16px var(--accent-glow);
+            color: var(--brass);
+            font-size: 18px;
         }
 
         .logo-text {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Libre Franklin', sans-serif;
             font-size: 20px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #F8FAFC, #C7D2FE);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+            color: var(--text-main);
         }
 
         .nav-items {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
             padding: 24px 16px;
             flex-grow: 1;
         }
 
         .nav-item {
             padding: 12px 16px;
-            border-radius: 10px;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -108,18 +107,19 @@
             color: var(--text-muted);
             font-weight: 500;
             font-size: 14px;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s ease;
+            border-left: 3px solid transparent;
         }
 
         .nav-item.active {
-            background: rgba(99, 102, 241, 0.12);
-            color: #818CF8;
-            border: 1px solid rgba(99, 102, 241, 0.2);
+            background: var(--status-high-bg);
+            color: var(--accent-primary);
+            border-left: 3px solid var(--accent-primary);
             font-weight: 600;
         }
 
         .nav-item:hover:not(.active) {
-            background-color: rgba(255, 255, 255, 0.04);
+            background-color: var(--bg-card-hover);
             color: var(--text-main);
         }
 
@@ -138,15 +138,13 @@
             display: flex;
             flex-direction: column;
             position: relative;
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.08), transparent 400px),
-                        radial-gradient(circle at bottom left, rgba(139, 92, 246, 0.05), transparent 400px);
+            background-color: var(--bg-main);
             overflow: hidden;
         }
 
         .header-bar {
             height: 72px;
-            background-color: rgba(19, 26, 42, 0.7);
-            backdrop-filter: blur(12px);
+            background-color: var(--bg-card);
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -205,9 +203,9 @@
         }
 
         .page-title h1 {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Libre Franklin', sans-serif;
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-main);
             margin-bottom: 6px;
             letter-spacing: -0.5px;
@@ -221,25 +219,19 @@
         /* Warning Banner */
         .warning-banner {
             display: none;
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
-            border: 1px solid rgba(239, 68, 68, 0.4);
-            border-radius: 12px;
+            background: var(--status-low-bg);
+            border: 1px solid var(--status-low-border);
+            border-radius: 6px;
             padding: 16px 20px;
             margin-bottom: 24px;
             align-items: center;
             gap: 14px;
-            color: #FCA5A5;
+            color: var(--status-low-text);
             font-size: 14px;
         }
 
         .warning-banner.active {
             display: flex;
-            animation: pulseBanner 2s infinite ease-in-out;
-        }
-
-        @keyframes pulseBanner {
-            0%, 100% { border-color: rgba(239, 68, 68, 0.4); }
-            50% { border-color: rgba(239, 68, 68, 0.8); }
         }
 
         /* Launch Controls */
@@ -267,16 +259,16 @@
             border: 1px solid var(--border);
             color: var(--text-main);
             padding: 12px 18px 12px 42px;
-            border-radius: 10px;
+            border-radius: 6px;
             width: 320px;
             font-size: 14px;
             outline: none;
-            transition: all 0.2s;
+            transition: all 0.15s;
         }
 
         .domain-input:focus {
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+            box-shadow: 0 0 0 3px var(--accent-glow);
         }
 
         .btn {
@@ -284,41 +276,49 @@
             color: var(--text-main);
             border: 1px solid var(--border);
             padding: 12px 20px;
-            border-radius: 10px;
+            border-radius: 6px;
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.15s;
             display: flex;
             align-items: center;
             gap: 8px;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #6366F1, #4F46E5);
-            border: 1px solid #6366F1;
-            color: white;
-            box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+            background-color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            color: #FFFFFF;
         }
 
         .btn-primary:hover:not(:disabled) {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+            background-color: var(--accent-primary-hover);
         }
 
         .btn-navy {
-            background-color: #1E293B;
-            border-color: rgba(255, 255, 255, 0.1);
-            color: white;
+            background-color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            color: #FFFFFF;
         }
 
         .btn-navy:hover:not(:disabled) {
-            background-color: #334155;
+            background-color: var(--accent-primary-hover);
         }
 
         .btn:disabled {
             cursor: not-allowed;
-            opacity: 0.5;
+            opacity: 0.45;
+        }
+
+        .selected-count {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--accent-primary);
+            padding: 12px 0;
+            min-width: 90px;
+            text-align: center;
         }
 
         /* Status Cards */
@@ -333,19 +333,19 @@
         .card {
             background-color: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 14px;
+            border-radius: 6px;
             padding: 22px;
             display: flex;
             flex-direction: column;
             gap: 12px;
             position: relative;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
-            transition: transform 0.2s, border-color 0.2s;
+            box-shadow: 0 1px 2px rgba(23, 22, 15, 0.06);
+            transition: border-color 0.15s;
             overflow: hidden;
         }
 
         .card:hover {
-            border-color: rgba(255, 255, 255, 0.15);
+            border-color: var(--border-highlight);
         }
 
         .card-header {
@@ -365,25 +365,28 @@
 
         .card-title i {
             font-size: 18px;
-            color: #818CF8;
+            color: var(--accent-primary);
         }
 
         .card-status-pill {
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 11px;
-            font-weight: 700;
+            font-weight: 600;
             padding: 4px 10px;
-            border-radius: 6px;
+            border-radius: 4px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            border: 1px solid var(--border);
+            color: var(--text-muted);
         }
 
         .status-idle { border: 1px solid var(--border); color: var(--text-muted); }
-        .status-running { background-color: var(--pill-running-bg); color: var(--pill-running-text); }
+        .status-running { background-color: var(--pill-running-bg); color: var(--pill-running-text); border-color: var(--accent-primary); }
         
         .card-value {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Libre Franklin', sans-serif;
             font-size: 32px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-main);
         }
 
@@ -394,7 +397,7 @@
 
         .progress-bar-container {
             height: 4px;
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: var(--bg-card-hover);
             border-radius: 2px;
             margin-top: 8px;
             overflow: hidden;
@@ -407,7 +410,7 @@
 
         .progress-bar {
             height: 100%;
-            background: linear-gradient(90deg, #6366F1, #A855F7);
+            background-color: var(--accent-primary);
             width: 0%;
             animation: progress 1.5s infinite ease-in-out;
         }
@@ -422,8 +425,8 @@
         .table-container {
             background-color: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 14px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(23, 22, 15, 0.06);
             margin-bottom: 28px;
             overflow: hidden;
         }
@@ -438,12 +441,12 @@
             align-items: center;
             padding: 18px 24px;
             border-bottom: 1px solid var(--border);
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: var(--bg-card);
         }
 
         .table-title {
-            font-family: 'Outfit', sans-serif;
-            font-weight: 600;
+            font-family: 'Libre Franklin', sans-serif;
+            font-weight: 700;
             font-size: 16px;
             display: flex;
             align-items: center;
@@ -452,7 +455,7 @@
         }
 
         .table-title i {
-            color: #818CF8;
+            color: var(--accent-primary);
             font-size: 20px;
         }
 
@@ -470,7 +473,7 @@
             text-transform: uppercase;
             letter-spacing: 0.6px;
             border-bottom: 1px solid var(--border);
-            background-color: rgba(0, 0, 0, 0.2);
+            background-color: var(--bg-card-hover);
         }
 
         td {
@@ -486,13 +489,23 @@
         }
 
         tr:hover td {
-            background-color: rgba(255, 255, 255, 0.02);
+            background-color: var(--bg-card-hover);
+        }
+
+        /* Checkboxes */
+        th input[type="checkbox"],
+        td input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--accent-primary);
+            cursor: pointer;
         }
 
         /* Badges */
         .badge {
-            padding: 5px 12px;
-            border-radius: 20px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 11px;
             font-weight: 600;
             display: inline-flex;
@@ -521,22 +534,24 @@
         }
 
         .badge-source {
-            background-color: rgba(99, 102, 241, 0.12);
-            color: #C7D2FE;
-            border: 1px solid rgba(99, 102, 241, 0.25);
+            background-color: var(--accent-glow);
+            color: var(--accent-primary);
+            border: 1px solid var(--border-highlight);
             text-transform: lowercase;
         }
 
         .badge-provider {
-            background-color: rgba(139, 92, 246, 0.15);
-            color: #DDD6FE;
-            border: 1px solid rgba(139, 92, 246, 0.3);
+            background-color: var(--accent-glow);
+            color: var(--accent-primary);
+            border: 1px solid var(--border-highlight);
         }
 
         .badge-verified {
-            background-color: var(--status-high-bg);
-            color: var(--status-high-text);
-            border: 1px solid var(--status-high-border);
+            background-color: transparent;
+            color: var(--brass);
+            border: 2px solid var(--brass);
+            border-radius: 50px;
+            padding: 4px 12px;
         }
 
         /* Bottom Bar */
@@ -546,8 +561,7 @@
             left: 0;
             right: 0;
             height: 72px;
-            background-color: rgba(19, 26, 42, 0.9);
-            backdrop-filter: blur(16px);
+            background-color: var(--bg-card);
             border-top: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -574,8 +588,7 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
+            background-color: rgba(23, 22, 15, 0.5);
             display: flex; justify-content: center; align-items: center;
             z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease;
         }
@@ -585,27 +598,27 @@
         .modal {
             background-color: var(--bg-card);
             border: 1px solid var(--border-highlight);
-            border-radius: 16px; width: 480px;
+            border-radius: 8px; width: 480px;
             max-width: 90%; padding: 28px; transform: translateY(20px);
-            transition: transform 0.3s ease; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease; box-shadow: 0 4px 12px rgba(23, 22, 15, 0.12);
         }
 
         .modal-overlay.active .modal { transform: translateY(0); }
 
-        .modal h2 { font-family: 'Outfit', sans-serif; font-size: 20px; margin-bottom: 12px; color: var(--text-main); }
+        .modal h2 { font-family: 'Libre Franklin', sans-serif; font-size: 20px; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
         .modal p { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; line-height: 1.6; }
 
         .modal-actions { display: flex; justify-content: flex-end; gap: 12px; }
 
         .toast {
             position: fixed; bottom: 90px; right: 36px;
-            background: linear-gradient(135deg, #10B981, #059669); color: white;
-            padding: 16px 24px; border-radius: 10px; font-weight: 600; font-size: 14px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); transform: translateY(100px);
+            background-color: var(--accent-primary); color: #FFFFFF;
+            padding: 16px 24px; border-radius: 6px; font-weight: 600; font-size: 14px;
+            box-shadow: 0 4px 12px rgba(23, 22, 15, 0.15); transform: translateY(100px);
             opacity: 0; transition: all 0.3s ease; z-index: 50; display: flex; align-items: center; gap: 10px;
         }
         .toast.show { transform: translateY(0); opacity: 1; }
-        .toast.error { background: linear-gradient(135deg, #EF4444, #DC2626); }
+        .toast.error { background-color: var(--status-low-text); }
 
         /* Report Stats Grid */
         .report-grid {
@@ -616,25 +629,32 @@
         .report-card {
             background-color: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 8px;
             padding: 36px;
             text-align: center;
         }
         .report-card .val {
-            font-family: 'Outfit', sans-serif;
+            font-family: 'Libre Franklin', sans-serif;
             font-size: 52px;
-            font-weight: 700;
-            background: linear-gradient(90deg, #818CF8, #C084FC);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-weight: 900;
+            color: var(--accent-primary);
             margin-bottom: 8px;
         }
         .report-card .lbl {
+            font-family: 'IBM Plex Mono', monospace;
             font-size: 13px;
             color: var(--text-muted);
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 1.2px;
+        }
+
+        /* Inline empty message */
+        .empty-message {
+            padding: 28px 24px;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 14px;
         }
     </style>
 </head>
@@ -643,7 +663,7 @@
     <!-- Sidebar -->
     <div class="sidebar">
         <div class="logo-container">
-            <div class="logo-icon"><i class="ph-bold ph-lightning"></i></div>
+            <div class="logo-icon"><i class="ph-bold ph-seal-check"></i></div>
             <div class="logo-text">ReachMatrix v2</div>
         </div>
         <div class="nav-items">
@@ -680,7 +700,7 @@
             </div>
             <div class="header-actions">
                 <i class="ph ph-bell"></i>
-                <i class="ph-fill ph-user-circle" style="color: #818CF8;"></i>
+                <i class="ph-fill ph-user-circle" style="color: var(--accent-primary);"></i>
             </div>
         </div>
 
@@ -703,6 +723,7 @@
                         <button class="btn btn-primary" onclick="launchPipeline()" id="launchBtn">
                             <i class="ph-bold ph-lightning"></i> Launch Pipeline
                         </button>
+                        <span class="selected-count" id="selectedCounter">0 selected</span>
                         <button class="btn btn-navy" onclick="openModal()" id="outreachBtn" disabled>
                             <i class="ph-fill ph-paper-plane-tilt"></i> Send Outreach
                         </button>
@@ -752,7 +773,30 @@
                     </div>
                 </div>
 
-                <!-- Competitor Discovery Table (NEW v2 requirement) -->
+                <!-- Seed Company Decision Makers Table (Change 1) -->
+                <div class="table-container" id="seedTableContainer" style="display:block;">
+                    <div class="table-header-row">
+                        <div class="table-title"><i class="ph ph-building-office"></i> Seed Company Decision Makers</div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="width:40px;"><input type="checkbox" id="seedSelectAll" onchange="toggleSelectAll('seed')"></th>
+                                <th>Decision Maker</th>
+                                <th>Title</th>
+                                <th>Company & Domain</th>
+                                <th>Verified Work Email</th>
+                                <th>Data Provider</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="seedTableBody">
+                            <tr><td colspan="7" class="empty-message">Run the pipeline to discover seed company decision makers.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Competitor Discovery Table -->
                 <div class="table-container hidden" id="compTableContainer">
                     <div class="table-header-row">
                         <div class="table-title"><i class="ph ph-buildings"></i> Stage 1 Discovered Competitors & Domain Verification</div>
@@ -770,7 +814,7 @@
                     </table>
                 </div>
 
-                <!-- Contacts Table -->
+                <!-- Competitor Contacts Table -->
                 <div class="table-container hidden" id="dashTableContainer">
                     <div class="table-header-row">
                         <div class="table-title"><i class="ph ph-user-check"></i> Stage 2 & 3 Verified Decision Makers (Ready for Review)</div>
@@ -778,6 +822,7 @@
                     <table>
                         <thead>
                             <tr>
+                                <th style="width:40px;"><input type="checkbox" id="compSelectAll" onchange="toggleSelectAll('comp')"></th>
                                 <th>Decision Maker</th>
                                 <th>Title</th>
                                 <th>Company & Domain</th>
@@ -876,7 +921,7 @@
                 <div>Verified Prospects: <span id="statPros">0</span></div>
             </div>
             <div style="color: var(--text-muted); font-size: 13px;">
-                <i class="ph-fill ph-lock-key" style="color: #34D399;"></i> Human safety review required before dispatch
+                <i class="ph-fill ph-lock-key" style="color: var(--accent-primary);"></i> Human safety review required before dispatch
             </div>
         </div>
     </div>
@@ -885,7 +930,7 @@
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal">
             <h2>Confirm Transactional Outreach</h2>
-            <p>You are about to dispatch personalized outreach emails to <span id="modalCount" style="color:var(--text-main);font-weight:bold;">0</span> verified decision makers via Brevo. Please confirm.</p>
+            <p>You are about to dispatch personalized outreach emails to <span id="modalCount" style="color:var(--text-main);font-weight:bold;">0</span> selected decision makers via Brevo. Please confirm.</p>
             <div class="modal-actions">
                 <button class="btn" onclick="closeModal()">Cancel</button>
                 <button class="btn btn-primary" onclick="confirmOutreach()" id="confirmBtn">Confirm & Dispatch</button>
@@ -897,13 +942,46 @@
 
     <script>
         let currentContacts = [];
+        let currentSeedContacts = [];
         let currentCompanies = [];
         let currentDomain = "";
         let currentRunMetrics = null;
+        let selectedContacts = new Set();
 
         if (!localStorage.getItem('reachmatrix_campaigns')) {
             localStorage.setItem('reachmatrix_campaigns', JSON.stringify([]));
             localStorage.setItem('reachmatrix_contacts', JSON.stringify([]));
+        }
+
+        function updateSelectedCounter() {
+            const count = selectedContacts.size;
+            document.getElementById('selectedCounter').innerText = count + ' selected';
+            document.getElementById('outreachBtn').disabled = (count === 0);
+        }
+
+        function toggleContactSelection(email, checkbox) {
+            if (checkbox.checked) {
+                selectedContacts.add(email);
+            } else {
+                selectedContacts.delete(email);
+            }
+            updateSelectedCounter();
+        }
+
+        function toggleSelectAll(tableType) {
+            const selectAllId = tableType === 'seed' ? 'seedSelectAll' : 'compSelectAll';
+            const tbodyId = tableType === 'seed' ? 'seedTableBody' : 'dashTableBody';
+            const isChecked = document.getElementById(selectAllId).checked;
+            const checkboxes = document.getElementById(tbodyId).querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(cb => {
+                cb.checked = isChecked;
+                const email = cb.dataset.email;
+                if (email) {
+                    if (isChecked) selectedContacts.add(email);
+                    else selectedContacts.delete(email);
+                }
+            });
+            updateSelectedCounter();
         }
 
         function switchView(viewId, navEl) {
@@ -937,11 +1015,16 @@
             btn.disabled = true;
             btn.innerHTML = `<i class="ph-bold ph-lightning"></i> Running AI Discovery...`;
 
+            // Reset state
+            selectedContacts.clear();
+            updateSelectedCounter();
             document.getElementById("warningBanner").classList.remove("active");
             document.getElementById("compTableContainer").classList.add("hidden");
             document.getElementById("dashTableContainer").classList.add("hidden");
             document.getElementById("compTableBody").innerHTML = "";
             document.getElementById("dashTableBody").innerHTML = "";
+            document.getElementById("seedTableBody").innerHTML = `<tr><td colspan="7" class="empty-message">Searching seed company...</td></tr>`;
+            document.getElementById("seedSelectAll").checked = false;
             document.getElementById("outreachBtn").disabled = true;
             
             document.getElementById("val-discover").innerText = "0";
@@ -964,16 +1047,17 @@
                 if (!response.ok) throw new Error(data.error || "Pipeline failed");
 
                 currentContacts = data.contacts || [];
+                currentSeedContacts = data.seed_contacts || [];
                 currentCompanies = data.companies || [];
-                currentRunMetrics = data.metrics || {companies: currentCompanies.length, prospects: currentContacts.length, verified: currentContacts.length};
+                currentRunMetrics = data.metrics || {companies: currentCompanies.length, prospects: currentContacts.length, verified: currentContacts.length, seed_verified: currentSeedContacts.length};
 
                 if (data.status === "partial" || data.warning) {
                     document.getElementById("warningText").innerText = data.warning || "Competitor discovery had low confidence for this domain.";
                     document.getElementById("warningBanner").classList.add("active");
                 }
 
-                await animatePipelineProgress(currentRunMetrics, currentCompanies, currentContacts);
-                saveToLocalStorage(domain, currentRunMetrics, currentCompanies, currentContacts);
+                await animatePipelineProgress(currentRunMetrics, currentCompanies, currentContacts, currentSeedContacts);
+                saveToLocalStorage(domain, currentRunMetrics, currentCompanies, currentContacts, currentSeedContacts);
 
             } catch (err) {
                 showToast(err.message, true);
@@ -991,7 +1075,7 @@
             pill.innerHTML = text;
         }
 
-        async function animatePipelineProgress(metrics, companies, contacts) {
+        async function animatePipelineProgress(metrics, companies, contacts, seedContacts) {
             setPill("pill-discover", '<i class="ph-bold ph-check"></i> DONE', "badge-high");
             document.getElementById("val-discover").innerText = metrics.companies;
             
@@ -1002,31 +1086,34 @@
             await new Promise(r => setTimeout(r, 600));
 
             setPill("pill-prospect", '<i class="ph-bold ph-check"></i> DONE', "badge-high");
-            document.getElementById("val-prospect").innerText = metrics.prospects;
+            const totalProspects = metrics.prospects + (metrics.seed_verified || 0);
+            document.getElementById("val-prospect").innerText = totalProspects;
             
             setPill("pill-verify", "RUNNING", "status-running");
             await new Promise(r => setTimeout(r, 600));
 
             document.getElementById("card-verify").classList.remove("running");
             setPill("pill-verify", '<i class="ph-bold ph-check"></i> DONE', "badge-high");
-            document.getElementById("val-verify").innerText = `${metrics.verified} / ${metrics.prospects}`;
+            document.getElementById("val-verify").innerText = `${metrics.verified + (metrics.seed_verified || 0)} / ${totalProspects}`;
 
+            // Populate seed contacts table
+            populateSeedTable(seedContacts);
+
+            // Populate competitor contacts table
             populateDashTable(contacts);
             document.getElementById("dashTableContainer").classList.remove("hidden");
             
             document.getElementById("statComp").innerText = metrics.companies;
-            document.getElementById("statPros").innerText = metrics.verified;
+            document.getElementById("statPros").innerText = metrics.verified + (metrics.seed_verified || 0);
 
-            if (contacts.length > 0) {
-                document.getElementById("outreachBtn").disabled = false;
-            }
+            updateSelectedCounter();
         }
 
         function populateCompTable(companies) {
             const tbody = document.getElementById("compTableBody");
             tbody.innerHTML = "";
             if (companies.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding: 24px;">No competitors discovered.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" class="empty-message">No competitors discovered.</td></tr>`;
                 return;
             }
 
@@ -1037,10 +1124,46 @@
                 else if (c.confidence === "low") confClass = "badge-low";
 
                 tr.innerHTML = `
-                    <td style="font-weight: 600; color: #F8FAFC;">${c.name}</td>
-                    <td><a href="https://${c.domain}" target="_blank" style="color: #818CF8; text-decoration: none;">${c.domain}</a></td>
+                    <td style="font-weight: 600; color: var(--text-main);">${c.name}</td>
+                    <td><a href="https://${c.domain}" target="_blank" style="font-family: 'IBM Plex Mono', monospace; color: var(--accent-primary); text-decoration: none;">${c.domain}</a></td>
                     <td><span class="badge badge-source"><i class="ph ph-cpu"></i> ${c.source}</span></td>
                     <td><span class="badge ${confClass}">${c.confidence.toUpperCase()}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function populateSeedTable(seedContacts) {
+            const tbody = document.getElementById("seedTableBody");
+            tbody.innerHTML = "";
+            document.getElementById("seedSelectAll").checked = false;
+
+            if (!seedContacts || seedContacts.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-message">No verified decision-makers found for the seed company.</td></tr>`;
+                return;
+            }
+
+            seedContacts.forEach((c) => {
+                const tr = document.createElement("tr");
+                const initials = (c.name || '').split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+                const providerBadge = c.provider === "hunter" ? "HUNTER.IO" : "PROSPEO";
+
+                tr.innerHTML = `
+                    <td><input type="checkbox" data-email="${c.email}" onchange="toggleContactSelection('${c.email}', this)"></td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--accent-primary); color: var(--brass); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;">${initials}</div>
+                            <span style="font-weight: 600;">${c.name}</span>
+                        </div>
+                    </td>
+                    <td style="color: var(--text-muted);">${c.title || '-'}</td>
+                    <td>
+                        <div style="font-weight: 500;">${c.company || '-'}</div>
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted);">${c.domain}</div>
+                    </td>
+                    <td style="font-family: 'IBM Plex Mono', monospace; color: var(--text-main);">${c.email}</td>
+                    <td><span class="badge badge-provider">${providerBadge}</span></td>
+                    <td><span class="badge badge-verified"><i class="ph-bold ph-seal-check"></i> VERIFIED</span></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1049,8 +1172,10 @@
         function populateDashTable(contacts) {
             const tbody = document.getElementById("dashTableBody");
             tbody.innerHTML = "";
+            document.getElementById("compSelectAll").checked = false;
+
             if (contacts.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 32px; color: var(--text-muted);">No verified decision makers found for these competitors.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" class="empty-message">No verified decision makers found for these competitors.</td></tr>`;
                 return;
             }
 
@@ -1060,26 +1185,27 @@
                 const providerBadge = c.provider === "hunter" ? "HUNTER.IO" : "PROSPEO";
 
                 tr.innerHTML = `
+                    <td><input type="checkbox" data-email="${c.email}" onchange="toggleContactSelection('${c.email}', this)"></td>
                     <td>
                         <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(99, 102, 241, 0.2); color: #818CF8; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">${initials}</div>
+                            <div style="width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--accent-primary); color: var(--brass); display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;">${initials}</div>
                             <span style="font-weight: 600;">${c.name}</span>
                         </div>
                     </td>
-                    <td style="color: #CBD5E1;">${c.title || '-'}</td>
+                    <td style="color: var(--text-muted);">${c.title || '-'}</td>
                     <td>
                         <div style="font-weight: 500;">${c.company || '-'}</div>
-                        <div style="font-size: 12px; color: var(--text-muted);">${c.domain}</div>
+                        <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text-muted);">${c.domain}</div>
                     </td>
-                    <td style="font-family: monospace; color: #E2E8F0;">${c.email}</td>
+                    <td style="font-family: 'IBM Plex Mono', monospace; color: var(--text-main);">${c.email}</td>
                     <td><span class="badge badge-provider">${providerBadge}</span></td>
-                    <td><span class="badge badge-verified"><i class="ph-bold ph-check"></i> VERIFIED</span></td>
+                    <td><span class="badge badge-verified"><i class="ph-bold ph-seal-check"></i> VERIFIED</span></td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        function saveToLocalStorage(domain, metrics, companies, contacts) {
+        function saveToLocalStorage(domain, metrics, companies, contacts, seedContacts) {
             let campaigns = JSON.parse(localStorage.getItem('reachmatrix_campaigns'));
             let allContacts = JSON.parse(localStorage.getItem('reachmatrix_contacts'));
             
@@ -1088,7 +1214,7 @@
                 date: new Date().toLocaleDateString(),
                 domain: domain,
                 companies: metrics.companies,
-                verified: metrics.verified,
+                verified: metrics.verified + (metrics.seed_verified || 0),
                 sent: 0
             };
             
@@ -1096,27 +1222,42 @@
             localStorage.setItem('reachmatrix_campaigns', JSON.stringify(campaigns));
 
             const mappedContacts = contacts.map(c => ({...c, sourceDomain: domain}));
-            allContacts = [...mappedContacts, ...allContacts];
+            const mappedSeed = (seedContacts || []).map(c => ({...c, sourceDomain: domain + ' (seed)'}));
+            allContacts = [...mappedSeed, ...mappedContacts, ...allContacts];
             localStorage.setItem('reachmatrix_contacts', JSON.stringify(allContacts));
             
             currentRunMetrics = newCampaign;
         }
 
         function openModal() {
-            document.getElementById("modalCount").innerText = currentContacts.length;
+            if (selectedContacts.size === 0) return;
+            document.getElementById("modalCount").innerText = selectedContacts.size;
             document.getElementById("modalOverlay").classList.add("active");
         }
         function closeModal() { document.getElementById("modalOverlay").classList.remove("active"); }
+
+        function getSelectedContactObjects() {
+            const allAvailable = [...currentContacts, ...currentSeedContacts];
+            return allAvailable.filter(c => selectedContacts.has(c.email));
+        }
 
         async function confirmOutreach() {
             const btn = document.getElementById("confirmBtn");
             btn.innerHTML = "Sending..."; btn.disabled = true;
 
+            const contactsToSend = getSelectedContactObjects();
+            if (contactsToSend.length === 0) {
+                showToast("No contacts selected", true);
+                btn.innerHTML = "Confirm & Dispatch"; btn.disabled = false;
+                closeModal();
+                return;
+            }
+
             try {
                 const response = await fetch("/api/send-emails", {
                     method: "POST",
                     headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ contacts: currentContacts, seed_domain: currentDomain })
+                    body: JSON.stringify({ contacts: contactsToSend, seed_domain: currentDomain })
                 });
 
                 const data = await response.json();
@@ -1156,13 +1297,13 @@
             tbody.innerHTML = campaigns.map(c => `
                 <tr>
                     <td>${c.date}</td>
-                    <td style="font-weight: 600; color: #818CF8;">${c.domain}</td>
+                    <td style="font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--accent-primary);">${c.domain}</td>
                     <td>${c.companies}</td>
                     <td><span class="badge badge-verified">${c.verified}</span></td>
                     <td><span class="badge badge-source">${c.sent}</span></td>
                 </tr>
             `).join('');
-            if(campaigns.length === 0) tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding: 24px;">No campaigns run yet.</td></tr>`;
+            if(campaigns.length === 0) tbody.innerHTML = `<tr><td colspan="5" class="empty-message">No campaigns run yet.</td></tr>`;
         }
 
         function renderContacts() {
@@ -1171,14 +1312,14 @@
             tbody.innerHTML = contacts.map(c => `
                 <tr>
                     <td style="font-weight: 600;">${c.name}</td>
-                    <td style="color: #CBD5E1;">${c.title || '-'}</td>
+                    <td style="color: var(--text-muted);">${c.title || '-'}</td>
                     <td>${c.company || '-'}</td>
-                    <td style="font-family: monospace; color: #E2E8F0;">${c.email}</td>
+                    <td style="font-family: 'IBM Plex Mono', monospace; color: var(--text-main);">${c.email}</td>
                     <td><span class="badge badge-provider">${(c.provider || 'prospeo').toUpperCase()}</span></td>
-                    <td style="color: #818CF8;">${c.sourceDomain || '-'}</td>
+                    <td style="font-family: 'IBM Plex Mono', monospace; color: var(--accent-primary);">${c.sourceDomain || '-'}</td>
                 </tr>
             `).join('');
-            if(contacts.length === 0) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px;">No contacts found yet.</td></tr>`;
+            if(contacts.length === 0) tbody.innerHTML = `<tr><td colspan="6" class="empty-message">No contacts found yet.</td></tr>`;
         }
 
         function renderReports() {
