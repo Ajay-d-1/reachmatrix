@@ -3,7 +3,7 @@ import json
 import time
 import logging
 import requests
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 from config import MISTRAL_API_KEY, APOLLO_API_KEY, OCEAN_MAX_RESULTS
 from .base import CompetitorDiscoveryProvider, CompetitorResult
 
@@ -36,25 +36,42 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
 
     def find_competitors(
         self, domain: str, company_name: str = "", industry: str = ""
-    ) -> List[CompetitorResult]:
+    ) -> Tuple[List[CompetitorResult], str]:
         logger.info(f"Stage 1 [Mistral]: Finding competitors for domain={domain}")
 
         # If seed company name/industry are not provided, enrich seed via Apollo
+        enriched_ind = ""
         if not company_name or not industry:
             enriched_name, enriched_ind = self._enrich_seed(domain)
             company_name = company_name or enriched_name or domain.split('.')[0].title()
-            industry = industry or enriched_ind or "Technology / B2B SaaS"
-            logger.info(f"Stage 1 [Mistral]: Seed context — name='{company_name}', industry='{industry}'")
+            # Only use Apollo's industry if it actually returned one.
+            # NEVER substitute a hardcoded guess — let the LLM determine it.
+            industry = industry or enriched_ind or ""
+            logger.info(
+                f"Stage 1 [Mistral]: Seed context — name='{company_name}', "
+                f"industry='{industry or '(unknown — will be LLM-determined)'}'"
+            )
 
         if not self.api_key:
             logger.error("Stage 1 [Mistral]: MISTRAL_API_KEY not configured. Cannot discover competitors.")
-            return []
+            return [], ""
+
+        # Build the industry hint: only include a real hint if we got one from
+        # Apollo or the caller.  Otherwise pass "unknown" so the LLM relies on
+        # its own knowledge rather than trusting a fabricated label.
+        industry_hint = industry if industry else "unknown"
 
         # Call Mistral LLM for structured JSON competitor discovery
-        raw_candidates = self._call_mistral_json(domain, company_name, industry)
+        raw_candidates, identified_industry = self._call_mistral_json(
+            domain, company_name, industry_hint
+        )
+        logger.info(
+            f"Stage 1 [Mistral]: Self-identified industry for {company_name}: {identified_industry}"
+        )
+
         if not raw_candidates:
             logger.warning("Stage 1 [Mistral]: No candidates returned from LLM. Never returning static fallback.")
-            return []
+            return [], identified_industry
 
         # Verify candidate domains
         verified_results: List[CompetitorResult] = []
@@ -104,9 +121,15 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
                 break
 
         logger.info(f"Stage 1 [Mistral]: Completed discovery, returning {len(verified_results)} verified competitors.")
-        return verified_results
+        return verified_results, identified_industry
 
-    def _call_mistral_json(self, domain: str, company_name: str, industry: str, retry: bool = True) -> List[dict]:
+    def _call_mistral_json(
+        self, domain: str, company_name: str, industry_hint: str, retry: bool = True
+    ) -> Tuple[List[dict], str]:
+        """Call Mistral for two-step reasoning: identify industry, then find competitors.
+
+        Returns (candidates_list, identified_industry).
+        """
         url = "https://api.mistral.ai/v1/chat/completions"
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -114,18 +137,25 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
         }
 
         system_prompt = (
-            "You are a B2B market research assistant. Given a company, return its most "
-            "direct, real-world competitors — companies that compete for the same "
-            "customers with the same core product or service. Only return companies you "
-            "are confident actually exist. Respond with strict JSON only, no prose."
+            "You are a B2B market research assistant. Given a company name and domain, "
+            "first determine what business the company is actually in — be specific "
+            "(e.g. 'diversified conglomerate: consumer goods, appliances, real estate' "
+            "rather than just 'conglomerate'). Then return its most direct, real-world "
+            "competitors — companies that compete for the same customers in the same "
+            "core business. If the company is diversified across multiple unrelated "
+            "business lines, choose its most prominent or historically core line of "
+            "business and find competitors in that specific segment. Only return "
+            "companies you are confident actually exist. Respond with strict JSON only, "
+            "no prose."
         )
 
         user_prompt = (
             f"Company: {company_name}\n"
             f"Domain: {domain}\n"
-            f"Industry: {industry}\n"
-            f"Return the top 5 direct competitors as JSON:\n"
-            f'[{{"name": "...", "domain": "..."}}]'
+            f"Known industry hint (may be incomplete or wrong — verify against your "
+            f"own knowledge before trusting it): {industry_hint}\n"
+            f"Return JSON in this exact shape:\n"
+            f'{{"identified_industry": "...", "competitors": [{{"name": "...", "domain": "..."}}]}}'
         )
 
         payload = {
@@ -143,45 +173,58 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
             if resp.status_code == 429 and retry:
                 logger.warning("Stage 1 [Mistral]: Rate limited (429). Waiting 3s and retrying once...")
                 time.sleep(3)
-                return self._call_mistral_json(domain, company_name, industry, retry=False)
+                return self._call_mistral_json(domain, company_name, industry_hint, retry=False)
 
             if resp.status_code != 200:
                 logger.error(f"Stage 1 [Mistral]: API error {resp.status_code} — {resp.text[:150]}")
                 # Retry once on non-200 if not already retried
                 if retry:
                     time.sleep(2)
-                    return self._call_mistral_json(domain, company_name, industry, retry=False)
-                return []
+                    return self._call_mistral_json(domain, company_name, industry_hint, retry=False)
+                return [], ""
 
             content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             if not content:
                 logger.error("Stage 1 [Mistral]: Empty content in response choice.")
-                return []
+                return [], ""
 
             parsed = json.loads(content)
-            # Handle if wrapped in {"competitors": [...]} or raw list
-            if isinstance(parsed, list):
-                return parsed
-            elif isinstance(parsed, dict):
+
+            # Extract identified_industry from the response dict
+            identified_industry = ""
+            candidates: List[dict] = []
+
+            if isinstance(parsed, dict):
+                identified_industry = parsed.get("identified_industry", "")
+                # Extract competitors list from known keys
                 for key in ["competitors", "companies", "results", "data"]:
                     if key in parsed and isinstance(parsed[key], list):
-                        return parsed[key]
-                # Check if values inside dict are a list
-                for v in parsed.values():
-                    if isinstance(v, list):
-                        return v
-            logger.error(f"Stage 1 [Mistral]: JSON structure unrecognized: {content[:100]}")
-            return []
+                        candidates = parsed[key]
+                        break
+                # Fallback: any list value in the dict
+                if not candidates:
+                    for v in parsed.values():
+                        if isinstance(v, list):
+                            candidates = v
+                            break
+            elif isinstance(parsed, list):
+                # Legacy format: raw list with no identified_industry
+                candidates = parsed
+
+            if not candidates and not identified_industry:
+                logger.error(f"Stage 1 [Mistral]: JSON structure unrecognized: {content[:100]}")
+
+            return candidates, identified_industry
 
         except json.JSONDecodeError as e:
             logger.error(f"Stage 1 [Mistral]: JSON parse error — {e}")
             if retry:
                 logger.info("Stage 1 [Mistral]: Retrying once after JSON decode failure...")
-                return self._call_mistral_json(domain, company_name, industry, retry=False)
-            return []
+                return self._call_mistral_json(domain, company_name, industry_hint, retry=False)
+            return [], ""
         except Exception as e:
             logger.error(f"Stage 1 [Mistral]: Request failed — {e}")
-            return []
+            return [], ""
 
     def _verify_domain_http(self, domain: str) -> bool:
         """HTTP HEAD request (with GET fallback) to verify domain resolution."""

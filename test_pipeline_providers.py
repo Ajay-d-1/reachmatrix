@@ -42,20 +42,21 @@ class TestPipelineProviders(unittest.TestCase):
         mock_verify.side_effect = lambda domain: domain == "zomato.com"  # zomato resolves, other doesn't
         mock_enrich.side_effect = lambda domain: ("Zomato", "Food Delivery") if domain == "zomato.com" else ("", "")
 
-        # Mock Mistral response returning two competitors
+        # Mock Mistral response with new two-step shape
         mock_resp = MagicMock()
         mock_resp.status_code = 200
         mock_resp.json.return_value = {
             "choices": [{
                 "message": {
-                    "content": '[{"name": "Zomato", "domain": "zomato.com"}, {"name": "FakeCompany", "domain": "fake.com"}]'
+                    "content": '{"identified_industry": "Food Delivery / Online Food Ordering", "competitors": [{"name": "Zomato", "domain": "zomato.com"}, {"name": "FakeCompany", "domain": "fake.com"}]}'
                 }
             }]
         }
         mock_post.return_value = mock_resp
 
-        results = self.discovery.find_competitors("swiggy.com", "Swiggy", "Food Delivery")
+        results, identified_industry = self.discovery.find_competitors("swiggy.com", "Swiggy", "Food Delivery")
         self.assertEqual(len(results), 2)
+        self.assertIn("Food Delivery", identified_industry)
 
         zomato = next(r for r in results if r["domain"] == "zomato.com")
         self.assertEqual(zomato["confidence"], "high")
@@ -108,6 +109,44 @@ class TestPipelineProviders(unittest.TestCase):
         self.assertEqual(c["email"], "ceo@zomato.com")
         self.assertTrue(c["email_verified"])
         self.assertEqual(c["provider"], "hunter")
+
+    @patch.object(MistralDiscoveryProvider, "_verify_domain_http", return_value=True)
+    @patch.object(MistralDiscoveryProvider, "_enrich_seed")
+    @patch("requests.post")
+    def test_no_hardcoded_industry_fallback(self, mock_post, mock_enrich, mock_verify):
+        """Root-cause regression test: when Apollo enrichment fails, the industry
+        hint must be 'unknown' — never 'Technology / B2B SaaS' or any other
+        hardcoded default."""
+        # Apollo returns nothing for godrej.com
+        mock_enrich.return_value = ("", "")
+
+        # Mock Mistral response with self-identified industry
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "choices": [{
+                "message": {
+                    "content": '{"identified_industry": "Diversified Conglomerate: Consumer Goods, Appliances, Real Estate", "competitors": [{"name": "Havells India", "domain": "havells.com"}, {"name": "Voltas", "domain": "voltas.com"}]}'
+                }
+            }]
+        }
+        mock_post.return_value = mock_resp
+
+        results, identified_industry = self.discovery.find_competitors("godrej.com")
+        self.assertEqual(len(results), 2)
+        self.assertIn("Conglomerate", identified_industry)
+
+        # Verify the Mistral prompt did NOT contain the old hardcoded fallback
+        call_args = mock_post.call_args
+        payload = call_args[1]["json"] if "json" in call_args[1] else call_args[0][1]
+        user_msg = payload["messages"][1]["content"]
+        self.assertNotIn("Technology / B2B SaaS", user_msg)
+        self.assertIn("unknown", user_msg)
+
+        # Verify no IT companies leaked in
+        domains = [r["domain"] for r in results]
+        for it_domain in ["tcs.com", "infosys.com", "wipro.com", "hcltech.com"]:
+            self.assertNotIn(it_domain, domains)
 
 
 if __name__ == "__main__":

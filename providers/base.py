@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import TypedDict, Literal, List
+from typing import TypedDict, Literal, List, Tuple
 
 
 class CompetitorResult(TypedDict):
@@ -13,7 +13,8 @@ class CompetitorDiscoveryProvider(ABC):
     @abstractmethod
     def find_competitors(
         self, domain: str, company_name: str, industry: str
-    ) -> List[CompetitorResult]:
+    ) -> Tuple[List[CompetitorResult], str]:
+        """Returns (competitors, identified_industry)."""
         ...
 
 

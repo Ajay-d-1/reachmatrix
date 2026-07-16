@@ -50,12 +50,13 @@ def run_pipeline():
     
     try:
         # Stage 1: Competitor Discovery (Mistral + Verification)
-        companies: list[CompetitorResult] = discovery_provider.find_competitors(seed_domain)
+        companies, identified_industry = discovery_provider.find_competitors(seed_domain)
         if not companies:
             logger.warning(f"No competitors discovered or verified for {seed_domain}. Returning explicit status without static fallback.")
             return jsonify({
                 "status": "error",
                 "error": "Competitor discovery returned no results or low confidence for this domain. No static fallback applied.",
+                "identified_industry": identified_industry,
                 "companies": [],
                 "contacts": [],
                 "metrics": {"companies": 0, "prospects": 0, "verified": 0}
@@ -113,6 +114,7 @@ def run_pipeline():
 
         response_payload = {
             "status": status,
+            "identified_industry": identified_industry,
             "companies": companies,
             "contacts": verified_contacts,
             "seed_contacts": seed_contacts_verified,
