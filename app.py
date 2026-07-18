@@ -51,11 +51,13 @@ def run_pipeline():
     try:
         # Stage 1: Competitor Discovery (Mistral + Verification)
         companies, identified_industry = discovery_provider.find_competitors(seed_domain)
+        resolved_seed = getattr(discovery_provider, "resolved_seed_domain", "") or discovery_provider._extract_root_domain(seed_domain) or seed_domain
         if not companies:
             logger.warning(f"No competitors discovered or verified for {seed_domain}. Returning explicit status without static fallback.")
             return jsonify({
                 "status": "error",
                 "error": "Competitor discovery returned no results or low confidence for this domain. No static fallback applied.",
+                "seed_domain": resolved_seed,
                 "identified_industry": identified_industry,
                 "companies": [],
                 "contacts": [],
@@ -69,11 +71,11 @@ def run_pipeline():
         # Stage 2a: People Search on SEED domain (separate dataset)
         seed_contacts_verified: list[PersonResult] = []
         try:
-            logger.info(f"Stage 2a: Prospecting decision makers at SEED domain ({seed_domain})")
-            seed_people = prospeo_provider.search_people(seed_domain)
+            logger.info(f"Stage 2a: Prospecting decision makers at SEED domain ({resolved_seed})")
+            seed_people = prospeo_provider.search_people(resolved_seed)
             if not seed_people:
-                logger.info(f"Stage 2a: Primary provider returned 0 for seed {seed_domain}. Failing over to Hunter.io...")
-                seed_people = hunter_provider.search_people(seed_domain)
+                logger.info(f"Stage 2a: Primary provider returned 0 for seed {resolved_seed}. Failing over to Hunter.io...")
+                seed_people = hunter_provider.search_people(resolved_seed)
             if seed_people:
                 seed_filtered = filter_cxo(seed_people)
                 seed_unique = deduplicate_contacts(seed_filtered)
@@ -81,7 +83,7 @@ def run_pipeline():
                 # Tag each seed contact
                 for sc in seed_contacts_verified:
                     sc["is_seed"] = True
-                logger.info(f"Stage 2a: Found {len(seed_contacts_verified)} verified seed contacts at {seed_domain}")
+                logger.info(f"Stage 2a: Found {len(seed_contacts_verified)} verified seed contacts at {resolved_seed}")
             else:
                 logger.info(f"Stage 2a: No decision makers found for seed domain {seed_domain}. Continuing.")
         except Exception as seed_err:
@@ -114,6 +116,7 @@ def run_pipeline():
 
         response_payload = {
             "status": status,
+            "seed_domain": resolved_seed,
             "identified_industry": identified_industry,
             "companies": companies,
             "contacts": verified_contacts,

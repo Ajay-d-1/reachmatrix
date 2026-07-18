@@ -1,6 +1,7 @@
 import re
 import json
 import time
+import socket
 import logging
 import requests
 from typing import Dict, List, Tuple
@@ -54,6 +55,7 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
 
         if not self.api_key:
             logger.error("Stage 1 [Mistral]: MISTRAL_API_KEY not configured. Cannot discover competitors.")
+            self.resolved_seed_domain = self._extract_root_domain(domain) or domain
             return [], ""
 
         # Build the industry hint: only include a real hint if we got one from
@@ -62,12 +64,24 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
         industry_hint = industry if industry else "unknown"
 
         # Call Mistral LLM for structured JSON competitor discovery
-        raw_candidates, identified_industry = self._call_mistral_json(
+        raw_candidates, identified_industry, seed_domain_from_llm = self._call_mistral_json(
             domain, company_name, industry_hint
         )
         logger.info(
             f"Stage 1 [Mistral]: Self-identified industry for {company_name}: {identified_industry}"
         )
+
+        clean_input = self._extract_root_domain(domain)
+        if clean_input and self._verify_domain_http(clean_input):
+            self.resolved_seed_domain = clean_input
+        elif seed_domain_from_llm:
+            clean_seed = self._extract_root_domain(seed_domain_from_llm) or seed_domain_from_llm.strip().lower()
+            if self._verify_domain_http(clean_seed):
+                self.resolved_seed_domain = clean_seed
+            else:
+                self.resolved_seed_domain = clean_input or domain
+        else:
+            self.resolved_seed_domain = clean_input or domain
 
         if not raw_candidates:
             logger.warning("Stage 1 [Mistral]: No candidates returned from LLM. Never returning static fallback.")
@@ -125,10 +139,10 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
 
     def _call_mistral_json(
         self, domain: str, company_name: str, industry_hint: str, retry: bool = True
-    ) -> Tuple[List[dict], str]:
-        """Call Mistral for two-step reasoning: identify industry, then find competitors.
+    ) -> Tuple[List[dict], str, str]:
+        """Call Mistral for two-step reasoning: identify industry and seed domain, then find competitors.
 
-        Returns (candidates_list, identified_industry).
+        Returns (candidates_list, identified_industry, seed_domain_extracted).
         """
         url = "https://api.mistral.ai/v1/chat/completions"
         headers = {
@@ -137,12 +151,13 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
         }
 
         system_prompt = (
-            "You are a B2B market research assistant. Given a company name and domain, "
-            "first determine what business the company is actually in — be specific "
+            "You are a B2B market research assistant. Given a company query or domain, "
+            "first identify its official primary root web domain (e.g. 'ril.com' for Reliance Industries) "
+            "in 'seed_domain'. Next determine what business the company is actually in — be specific "
             "(e.g. 'diversified conglomerate: consumer goods, appliances, real estate' "
-            "rather than just 'conglomerate'). Then return its most direct, real-world "
+            "rather than just 'conglomerate') in 'identified_industry'. Then return its most direct, real-world "
             "competitors — companies that compete for the same customers in the same "
-            "core business. If the company is diversified across multiple unrelated "
+            "core business in 'competitors'. If the company is diversified across multiple unrelated "
             "business lines, choose its most prominent or historically core line of "
             "business and find competitors in that specific segment. Only return "
             "companies you are confident actually exist. Respond with strict JSON only, "
@@ -150,12 +165,12 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
         )
 
         user_prompt = (
-            f"Company: {company_name}\n"
-            f"Domain: {domain}\n"
+            f"Company/Query: {company_name or domain}\n"
+            f"Domain Input: {domain}\n"
             f"Known industry hint (may be incomplete or wrong — verify against your "
             f"own knowledge before trusting it): {industry_hint}\n"
             f"Return JSON in this exact shape:\n"
-            f'{{"identified_industry": "...", "competitors": [{{"name": "...", "domain": "..."}}]}}'
+            f'{{"seed_domain": "...", "identified_industry": "...", "competitors": [{{"name": "...", "domain": "..."}}]}}'
         )
 
         payload = {
@@ -181,21 +196,23 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
                 if retry:
                     time.sleep(2)
                     return self._call_mistral_json(domain, company_name, industry_hint, retry=False)
-                return [], ""
+                return [], "", ""
 
             content = resp.json().get("choices", [{}])[0].get("message", {}).get("content", "").strip()
             if not content:
                 logger.error("Stage 1 [Mistral]: Empty content in response choice.")
-                return [], ""
+                return [], "", ""
 
             parsed = json.loads(content)
 
-            # Extract identified_industry from the response dict
+            # Extract identified_industry and seed_domain from the response dict
             identified_industry = ""
+            seed_domain_extracted = ""
             candidates: List[dict] = []
 
             if isinstance(parsed, dict):
                 identified_industry = parsed.get("identified_industry", "")
+                seed_domain_extracted = parsed.get("seed_domain", "").strip()
                 # Extract competitors list from known keys
                 for key in ["competitors", "companies", "results", "data"]:
                     if key in parsed and isinstance(parsed[key], list):
@@ -214,37 +231,54 @@ class MistralDiscoveryProvider(CompetitorDiscoveryProvider):
             if not candidates and not identified_industry:
                 logger.error(f"Stage 1 [Mistral]: JSON structure unrecognized: {content[:100]}")
 
-            return candidates, identified_industry
+            return candidates, identified_industry, seed_domain_extracted
 
         except json.JSONDecodeError as e:
             logger.error(f"Stage 1 [Mistral]: JSON parse error — {e}")
             if retry:
                 logger.info("Stage 1 [Mistral]: Retrying once after JSON decode failure...")
                 return self._call_mistral_json(domain, company_name, industry_hint, retry=False)
-            return [], ""
+            return [], "", ""
         except Exception as e:
             logger.error(f"Stage 1 [Mistral]: Request failed — {e}")
-            return [], ""
+            return [], "", ""
 
     def _verify_domain_http(self, domain: str) -> bool:
-        """HTTP HEAD request (with GET fallback) to verify domain resolution."""
-        for proto in ["https://", "http://"]:
-            url = f"{proto}{domain}"
+        """Verify domain resolution using fast DNS checks and realistic browser HTTP headers."""
+        if not domain:
+            return False
+        # Step 1: Fast DNS check
+        dns_ok = False
+        for candidate in [domain, f"www.{domain}"]:
             try:
-                # HEAD request first
-                r = requests.head(url, timeout=5, allow_redirects=True, headers={"User-Agent": "Mozilla/5.0"})
-                if r.status_code < 400 or r.status_code in (401, 403):
+                ip = socket.gethostbyname(candidate)
+                if ip and ip not in ("0.0.0.0", "127.0.0.1"):
+                    dns_ok = True
+                    break
+            except Exception:
+                pass
+        if not dns_ok:
+            return False
+
+        # Step 2: Fast HTTP/HTTPS check with realistic browser headers
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        }
+        for prefix in ["https://", "https://www.", "http://", "http://www."]:
+            url = f"{prefix}{domain}"
+            try:
+                r = requests.head(url, timeout=(2, 3), allow_redirects=True, headers=headers)
+                if r.status_code < 400 or r.status_code in (401, 403, 405, 406, 429, 503):
                     return True
-            except requests.exceptions.RequestException:
+            except Exception:
                 try:
-                    # Fallback to GET with short timeout if HEAD fails/rejected
-                    r_get = requests.get(url, timeout=5, allow_redirects=True, headers={"User-Agent": "Mozilla/5.0"}, stream=True)
+                    r_get = requests.get(url, timeout=(2, 3), allow_redirects=True, headers=headers, stream=True)
                     r_get.close()
-                    if r_get.status_code < 400 or r_get.status_code in (401, 403):
+                    if r_get.status_code < 400 or r_get.status_code in (401, 403, 405, 406, 429, 503):
                         return True
-                except requests.exceptions.RequestException:
+                except Exception:
                     continue
-        return False
+        return dns_ok
 
     def _enrich_seed(self, domain: str) -> Tuple[str, str]:
         """Calls Apollo enrich endpoint for seed organization details."""
